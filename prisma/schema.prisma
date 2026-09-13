@@ -1,0 +1,192 @@
+// Story-to-Image Platform — database schema
+// Conventions: snake_case columns, explicit column names, don't over-normalize.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums — KIE states are used verbatim where the provider defines them.
+// ---------------------------------------------------------------------------
+
+enum JobState {
+  waiting
+  queuing
+  generating
+  downloading
+  success
+  fail
+  download_failed
+}
+
+enum KieTaskState {
+  waiting
+  queuing
+  generating
+  success
+  fail
+}
+
+enum ProviderLane {
+  text_to_image
+  ideogram_character
+  flux2_multi
+}
+
+enum PromptSource {
+  auto
+  user_edited
+}
+
+enum ProjectStatus {
+  draft
+  analyzing
+  analyzed
+  planning
+  planned
+  generating
+  completed
+  failed
+}
+
+// ---------------------------------------------------------------------------
+// Models
+// ---------------------------------------------------------------------------
+
+model Project {
+  id                   String        @id @default(cuid())
+  script               String
+  visualStyleDirective String        @default("cinematic")
+  aspectRatio          String        @default("16:9")
+  generationLimit      Int           @default(30)
+  status               ProjectStatus @default(draft)
+  storyBible           Json?
+  analysisError        String?
+  createdAt            DateTime      @default(now()) @map("created_at")
+  updatedAt            DateTime      @updatedAt @map("updated_at")
+
+  characters Character[]
+  locations  Location[]
+  scenes     Scene[]
+
+  @@map("projects")
+}
+
+model Character {
+  id                   String   @id @default(cuid())
+  projectId            String   @map("project_id")
+  name                 String
+  canonicalDescription String   @map("canonical_description")
+  referenceImageUrls   String[] @map("reference_image_urls")
+
+  project Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  states  CharacterState[]
+
+  @@index([projectId])
+  @@map("characters")
+}
+
+model CharacterState {
+  id          String @id @default(cuid())
+  characterId String @map("character_id")
+  sceneId     String @map("scene_id")
+  changes     String
+
+  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  @@unique([characterId, sceneId])
+  @@index([sceneId])
+  @@map("character_states")
+}
+
+model Location {
+  id                   String   @id @default(cuid())
+  projectId            String   @map("project_id")
+  name                 String
+  canonicalDescription String   @map("canonical_description")
+  referenceImageUrls   String[] @map("reference_image_urls")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  scenes  Scene[]
+
+  @@index([projectId])
+  @@map("locations")
+}
+
+model Scene {
+  id                      String       @id @default(cuid())
+  projectId               String       @map("project_id")
+  order                   Int
+  scriptExcerpt           String       @map("script_excerpt")
+  characterIds            String[]     @map("character_ids")
+  locationId              String?      @map("location_id")
+  action                  String
+  emotion                 String?
+  composition             String       @default("")
+  continuityNotes         String       @default("")
+  identityLockRequirement IdentityLock @default(none)
+  prompt                  String       @default("")
+  promptSource            PromptSource @default(auto) @map("prompt_source")
+  status                  String       @default("waiting")
+  imageVersion            Int          @default(0) @map("image_version")
+  imageUrl                String?      @map("image_url")
+
+  project  Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  location Location?       @relation(fields: [locationId], references: [id])
+  jobs     GenerationJob[]
+  assets   Asset[]
+
+  @@unique([projectId, order])
+  @@index([projectId])
+  @@map("scenes")
+}
+
+model GenerationJob {
+  id              String       @id @default(cuid())
+  sceneId         String       @map("scene_id")
+  imageVersion    Int          @map("image_version")
+  idempotencyKey  String       @unique @map("idempotency_key")
+  provider        ProviderLane
+  providerTaskId  String?      @map("provider_task_id")
+  state           JobState     @default(waiting)
+  creditsConsumed Float?       @map("credits_consumed")
+  attempts        Int          @default(0)
+  lastError       String?      @map("last_error")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  completedAt     DateTime?    @map("completed_at")
+
+  scene  Scene   @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+  assets Asset[]
+
+  @@index([sceneId])
+  @@index([state])
+  @@map("generation_jobs")
+}
+
+model Asset {
+  id              String   @id @default(cuid())
+  sceneId         String   @map("scene_id")
+  imageVersion    Int      @map("image_version")
+  storageUrl      String   @map("storage_url")
+  generationJobId String   @map("generation_job_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  scene Scene         @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+  job   GenerationJob @relation(fields: [generationJobId], references: [id], onDelete: Cascade)
+
+  @@unique([sceneId, imageVersion])
+  @@index([sceneId])
+  @@map("assets")
+}
+
+enum IdentityLock {
+  none
+  single
+  multi
+}

@@ -1,0 +1,154 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@400;500&display=swap");
+
+@import "tailwindcss";
+
+/* -------------------------------------------------------------------------
+   Tailwind v4 — CSS-first theme definition
+   ------------------------------------------------------------------------- */
+
+@theme {
+  --font-sans: "DM Sans", system-ui, sans-serif;
+  --font-mono: "DM Mono", ui-monospace, monospace;
+
+  --color-accent: #8b6fe8;
+  --color-accent-soft: #efe8fc;
+  --color-surface: #ffffff;
+  --color-surface-border: #ececef;
+  --color-muted: #9ca3af;
+
+  --shadow-card: 0 2px 12px 0 rgba(139, 111, 232, 0.07),
+    0 1px 3px 0 rgba(0, 0, 0, 0.04);
+  --shadow-card-hover: 0 4px 24px 0 rgba(139, 111, 232, 0.13),
+    0 2px 8px 0 rgba(0, 0, 0, 0.06);
+
+  --animate-spin-slow: spin 2s linear infinite;
+  --animate-fade-in: fadeIn 0.35s ease forwards;
+  --animate-slide-up: slideUp 0.4s ease forwards;
+  --animate-shimmer: shimmer 1.6s ease-in-out infinite;
+}
+
+/* -------------------------------------------------------------------------
+   Design tokens (also available as CSS custom props for inline styles)
+   ------------------------------------------------------------------------- */
+
+:root {
+  --bg-gradient: linear-gradient(135deg, #f7e9f2 0%, #ece6fb 100%);
+  --surface: #ffffff;
+  --surface-border: #ececef;
+  --accent-primary: #8b6fe8;
+  --accent-primary-soft: #efe8fc;
+  --text-primary: #1a1a1a;
+  --text-muted: #9ca3af;
+  --accent-gradient-bar: linear-gradient(90deg, #ff4fa0, #7c5ce0);
+}
+
+/* -------------------------------------------------------------------------
+   Base resets
+   ------------------------------------------------------------------------- */
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html,
+  body {
+    min-height: 100dvh;
+    font-family: "DM Sans", system-ui, sans-serif;
+    color: #1a1a1a;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection {
+    background: #efe8fc;
+    color: #8b6fe8;
+  }
+}
+
+/* -------------------------------------------------------------------------
+   Keyframes
+   ------------------------------------------------------------------------- */
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -400px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
+}
+
+/* -------------------------------------------------------------------------
+   Utility classes
+   ------------------------------------------------------------------------- */
+
+@layer utilities {
+  .font-mono-num {
+    font-family: "DM Mono", ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.35s ease forwards;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.4s ease forwards;
+  }
+
+  .animate-shimmer {
+    animation: shimmer 1.6s ease-in-out infinite;
+  }
+
+  .animate-spin-slow {
+    animation: spin 2s linear infinite;
+  }
+
+  /* Gradient progress bar */
+  .gradient-bar {
+    background: linear-gradient(90deg, #ff4fa0, #7c5ce0);
+  }
+
+  /* Skeleton shimmer */
+  .skeleton {
+    background: linear-gradient(90deg, #f0e8fa 25%, #e4d5f5 50%, #f0e8fa 75%);
+    background-size: 400px 100%;
+    animation: shimmer 1.6s ease-in-out infinite;
+  }
+
+  /* Card shadows */
+  .shadow-card {
+    box-shadow: 0 2px 12px 0 rgba(139, 111, 232, 0.07),
+      0 1px 3px 0 rgba(0, 0, 0, 0.04);
+  }
+
+  .shadow-card-hover {
+    box-shadow: 0 4px 24px 0 rgba(139, 111, 232, 0.13),
+      0 2px 8px 0 rgba(0, 0, 0, 0.06);
+  }
+}
