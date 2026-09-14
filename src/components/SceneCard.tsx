@@ -219,13 +219,13 @@ export function SceneCard({ scene, onUpdate }: SceneCardProps) {
         )}
 
         {/* Action row */}
-        <div className="flex items-center gap-2 border-t pt-3" style={{ borderColor: "var(--surface-border)" }}>
+        <div className="flex flex-wrap items-center gap-2 border-t pt-3" style={{ borderColor: "var(--surface-border)" }}>
           {terminal && (
             <button
               id={`regenerate-${scene.id}`}
               onClick={handleRegenerate}
               disabled={regenerating}
-              className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[12px] font-medium transition-all hover:border-[var(--accent-primary)] hover:text-[var(--accent-primary)] disabled:opacity-50"
+              className="flex items-center gap-1.5 whitespace-nowrap rounded-lg border px-3 py-1.5 text-[12px] font-medium transition-all hover:border-[var(--accent-primary)] hover:text-[var(--accent-primary)] disabled:opacity-50"
               style={{
                 borderColor: "var(--surface-border)",
                 color: "var(--text-muted)",
@@ -245,7 +245,7 @@ export function SceneCard({ scene, onUpdate }: SceneCardProps) {
             <button
               id={`download-${scene.id}`}
               onClick={handleDownload}
-              className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[12px] font-medium transition-all hover:border-[var(--accent-primary)] hover:text-[var(--accent-primary)]"
+              className="flex items-center gap-1.5 whitespace-nowrap rounded-lg border px-3 py-1.5 text-[12px] font-medium transition-all hover:border-[var(--accent-primary)] hover:text-[var(--accent-primary)]"
               style={{
                 borderColor: "var(--surface-border)",
                 color: "var(--text-muted)",
@@ -262,7 +262,7 @@ export function SceneCard({ scene, onUpdate }: SceneCardProps) {
           <button
             id={`edit-prompt-${scene.id}`}
             onClick={() => setPromptOpen((v) => !v)}
-            className="ml-auto flex items-center gap-1 text-[12px] font-medium transition-colors"
+            className="ml-auto flex items-center gap-1 whitespace-nowrap text-[12px] font-medium transition-colors"
             style={{ color: promptOpen ? "var(--accent-primary)" : "var(--text-muted)" }}
             aria-expanded={promptOpen}
           >
