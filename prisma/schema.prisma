@@ -53,6 +53,7 @@ enum ProjectStatus {
   generating
   completed
   failed
+  cancelled
 }
 
 // ---------------------------------------------------------------------------

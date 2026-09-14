@@ -57,6 +57,17 @@ export interface ProjectStatus {
   scenes: StatusScene[];
 }
 
+export interface ProjectHistoryItem {
+  id: string;
+  status: ProjectStatus["status"];
+  visualStyleDirective: string;
+  aspectRatio: string;
+  generationLimit: number;
+  createdAt: string;
+  updatedAt: string;
+  _count: { scenes: number };
+}
+
 export interface StoryboardScene {
   id: string;
   order: number;
@@ -105,20 +116,28 @@ export async function createProject(payload: {
   });
 }
 
-export async function analyzeProject(id: string): Promise<void> {
-  await apiFetch(`/api/projects/${id}/analyze`, { method: "POST" });
+export async function analyzeProject(id: string, signal?: AbortSignal): Promise<void> {
+  await apiFetch(`/api/projects/${id}/analyze`, { method: "POST", signal });
 }
 
-export async function planScenes(id: string): Promise<void> {
-  await apiFetch(`/api/projects/${id}/plan-scenes`, { method: "POST" });
+export async function planScenes(id: string, signal?: AbortSignal): Promise<void> {
+  await apiFetch(`/api/projects/${id}/plan-scenes`, { method: "POST", signal });
 }
 
-export async function generateProject(id: string): Promise<void> {
-  await apiFetch(`/api/projects/${id}/generate`, { method: "POST" });
+export async function generateProject(id: string, signal?: AbortSignal): Promise<void> {
+  await apiFetch(`/api/projects/${id}/generate`, { method: "POST", signal });
+}
+
+export async function stopProject(id: string): Promise<void> {
+  await apiFetch(`/api/projects/${id}/stop`, { method: "POST" });
 }
 
 export async function getProjectStatus(id: string): Promise<ProjectStatus> {
   return apiFetch<ProjectStatus>(`/api/projects/${id}/status`);
+}
+
+export async function getProjects(): Promise<{ projects: ProjectHistoryItem[] }> {
+  return apiFetch<{ projects: ProjectHistoryItem[] }>(`/api/projects`);
 }
 
 export async function getStoryboard(id: string): Promise<Storyboard> {

@@ -9,11 +9,14 @@ import {
   RefreshCw,
   ImageOff,
   Clock,
+  Coins,
   type LucideIcon,
 } from "lucide-react";
 import {
   getProjectStatus,
+  isFailed,
   isTerminal,
+  stopProject,
   type ProjectStatus,
   type SceneStatus,
 } from "@/lib/api-client";
@@ -21,11 +24,12 @@ import {
 interface ProgressViewProps {
   projectId: string;
   onComplete: () => void;
+  onStop?: () => void;
 }
 
 const POLL_INTERVAL_MS = 3000;
 
-export function ProgressView({ projectId, onComplete }: ProgressViewProps) {
+export function ProgressView({ projectId, onComplete, onStop }: ProgressViewProps) {
   const [status, setStatus] = useState<ProjectStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
   const doneRef = useRef(false);
@@ -73,17 +77,26 @@ export function ProgressView({ projectId, onComplete }: ProgressViewProps) {
   useEffect(() => {
     if (process.env.NODE_ENV !== "development") return;
     const id = setInterval(() => {
-      fetch("/api/cron/reconcile", { method: "POST" }).catch(() => {});
+      fetch("/api/internal/reconcile", { method: "POST" }).catch(() => {});
     }, 60_000);
     // Also fire once immediately after 35s (just past the 30s stale threshold)
     const initial = setTimeout(() => {
-      fetch("/api/cron/reconcile", { method: "POST" }).catch(() => {});
+      fetch("/api/internal/reconcile", { method: "POST" }).catch(() => {});
     }, 35_000);
     return () => {
       clearInterval(id);
       clearTimeout(initial);
     };
   }, []);
+
+  const handleStop = async () => {
+    try {
+      await stopProject(projectId);
+    } catch (e) {
+      console.error("Failed to stop project via API", e);
+    }
+    if (onStop) onStop();
+  };
 
   const scenesDone =
     status?.generation?.succeeded ?? status?.scenes.filter((s) => isTerminal(s.status)).length ?? 0;
@@ -93,6 +106,7 @@ export function ProgressView({ projectId, onComplete }: ProgressViewProps) {
   const storyAnalyzed = status?.analysis?.storyBibleReady === true;
   const hasScenes = (status?.planning?.sceneCount ?? 0) > 0;
   const hasGenerationStarted = (status?.scenes.length ?? 0) > 0;
+  const budget = status?.budget;
 
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center px-6 py-20">

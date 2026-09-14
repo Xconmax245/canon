@@ -41,6 +41,13 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
         results.push({ sceneId: scene.id, state: "success" });
         continue;
       }
+      
+      // Check if project was cancelled via the Stop button before dispatching
+      const currentProject = await prisma.project.findUnique({ where: { id } });
+      if (currentProject?.status === "cancelled") {
+        break; // Stop dispatching further scenes
+      }
+
       try {
         const r = await startGenerationForScene(scene.id);
         results.push({ sceneId: scene.id, jobId: r.jobId, state: r.state });

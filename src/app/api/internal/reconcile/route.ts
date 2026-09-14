@@ -1,18 +1,21 @@
 import { reconcileStaleJobs } from "@/lib/generation/reconciler";
-import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
 
 /**
- * Reconciliation sweep — run every few minutes (e.g. Vercel Cron).
+ * Reconciliation sweep — run via Supabase pg_cron + pg_net (or cron-job.org).
  * Safety net for missed/dropped webhooks: polls recordInfo for jobs stuck in
  * active states and re-drives recent download_failed jobs.
  *
- * Protect with CRON_SECRET: `Authorization: Bearer <CRON_SECRET>`.
- * (Vercel Cron sends this header automatically when CRON_SECRET is set.)
+ * Protected with INTERNAL_RECONCILE_SECRET: `Authorization: Bearer <SECRET>`.
  */
 async function run(req: Request) {
-  const secret = env.app.cronSecret();
-  if (secret) {
+  const secret = process.env.INTERNAL_RECONCILE_SECRET;
+  
+  if (process.env.NODE_ENV !== "development") {
+    if (!secret) {
+      logger.error("cron.reconcile_error", { error: "INTERNAL_RECONCILE_SECRET not set in production" });
+      return Response.json({ error: "server_configuration_error" }, { status: 500 });
+    }
     const auth = req.headers.get("authorization");
     if (auth !== `Bearer ${secret}`) {
       return Response.json({ error: "unauthorized" }, { status: 401 });
@@ -28,10 +31,6 @@ async function run(req: Request) {
     });
     return Response.json({ ok: false }, { status: 500 });
   }
-}
-
-export async function GET(req: Request) {
-  return run(req);
 }
 
 export async function POST(req: Request) {

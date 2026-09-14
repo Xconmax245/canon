@@ -353,7 +353,7 @@ export async function retryFailedGeneration(sceneId: string): Promise<StartGener
     // then escalate to a fresh generation. Also escalate immediately when the
     // probe proves the URL/task is gone for good.
     if (latest.attempts >= 2 || (await downloadIsUnrecoverable(latest))) {
-      return startGenerationForScene(sceneId, { newVersion: true });
+      return startGenerationForScene(sceneId);
     }
     await retryDownload(latest.id);
     return { jobId: latest.id, state: "downloading", imageVersion: latest.imageVersion, reused: true };
@@ -361,7 +361,7 @@ export async function retryFailedGeneration(sceneId: string): Promise<StartGener
 
   if (latest && latest.state === "fail" && latest.providerTaskId) {
     // Bump the version so the idempotency key allows a fresh KIE task.
-    return startGenerationForScene(sceneId, { newVersion: true });
+    return startGenerationForScene(sceneId);
   }
 
   if (latest && latest.state === "fail") {

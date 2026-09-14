@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Loader2 } from "lucide-react";
 import { CreateView } from "@/components/CreateView";
 import { ProgressView } from "@/components/ProgressView";
 import { StoryboardView } from "@/components/StoryboardView";
+import { HistoryView } from "@/components/HistoryView";
 import {
   createProject,
   analyzeProject,
@@ -12,16 +13,21 @@ import {
   generateProject,
 } from "@/lib/api-client";
 
-type AppStage = "create" | "creating" | "progress" | "storyboard";
+type AppStage = "create" | "creating" | "progress" | "storyboard" | "history";
 
 export default function Home() {
   const [stage, setStage] = useState<AppStage>("create");
   const [projectId, setProjectId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const handleGenerate = useCallback(
     async (script: string, styleDirective: string) => {
       setError(null);
+      
+      abortControllerRef.current = new AbortController();
+      const signal = abortControllerRef.current.signal;
       // Show interstitial immediately — before the first API call lands
       setStage("creating");
       try {
@@ -32,10 +38,14 @@ export default function Home() {
         // Switch to progress only once we have a real project ID
         setProjectId(project.id);
         setStage("progress");
-        await analyzeProject(project.id);
-        await planScenes(project.id);
-        await generateProject(project.id);
+        await analyzeProject(project.id, signal);
+        await planScenes(project.id, signal);
+        await generateProject(project.id, signal);
       } catch (err: unknown) {
+        if (err instanceof DOMException && err.name === "AbortError") {
+          // Ignore fetch aborts from the Stop button
+          return;
+        }
         const msg = err instanceof Error ? err.message : "Something went wrong.";
         setError(msg);
         setStage("create");
@@ -43,6 +53,15 @@ export default function Home() {
     },
     []
   );
+
+  const handleStop = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    setProjectId(null);
+    setStage("create");
+    setError(null);
+  }, []);
 
   const handleProgressComplete = useCallback(() => {
     setStage("storyboard");
@@ -54,10 +73,30 @@ export default function Home() {
     setError(null);
   }, []);
 
+  const handleSelectHistoryProject = useCallback((id: string, status: string) => {
+    setProjectId(id);
+    if (status === "generating" || status === "analyzing" || status === "planning" || status === "draft") {
+      setStage("progress");
+    } else {
+      setStage("storyboard");
+    }
+  }, []);
+
   return (
     <div className="min-h-dvh" style={{ background: "var(--bg-gradient)", backgroundAttachment: "fixed" }}>
       {stage === "create" && (
-        <CreateView onGenerate={handleGenerate} initialError={error} />
+        <CreateView 
+          onGenerate={handleGenerate} 
+          onViewHistory={() => setStage("history")}
+          initialError={error} 
+        />
+      )}
+
+      {stage === "history" && (
+        <HistoryView 
+          onBack={() => setStage("create")}
+          onSelectProject={handleSelectHistoryProject}
+        />
       )}
 
       {/* Interstitial: createProject API call in flight */}
@@ -84,6 +123,7 @@ export default function Home() {
         <ProgressView
           projectId={projectId}
           onComplete={handleProgressComplete}
+          onStop={handleStop}
         />
       )}
       {stage === "storyboard" && projectId && (

@@ -13,6 +13,7 @@ import {
   Loader2,
   Plus,
   Check,
+  History as HistoryIcon,
   type LucideIcon,
 } from "lucide-react";
 import { STYLE_PRESETS } from "@/lib/types";
@@ -62,10 +63,11 @@ const PRESET_META: Record<
 
 interface CreateViewProps {
   onGenerate: (script: string, styleDirective: string) => void;
+  onViewHistory: () => void;
   initialError?: string | null;
 }
 
-export function CreateView({ onGenerate, initialError }: CreateViewProps) {
+export function CreateView({ onGenerate, onViewHistory, initialError }: CreateViewProps) {
   const [script, setScript] = useState("");
   const [selectedPreset, setSelectedPreset] = useState<Preset>("cinematic");
   const [customStyle, setCustomStyle] = useState("");
@@ -109,6 +111,34 @@ export function CreateView({ onGenerate, initialError }: CreateViewProps) {
       </div>
 
       <div className="relative z-10 w-full max-w-[640px]" data-aos="fade-up">
+        {/* Title / History Header */}
+        <div className="mb-8 flex items-center justify-between">
+          <h1
+            className="text-[28px] font-semibold tracking-tight"
+            style={{ color: "var(--text-primary)" }}
+          >
+            Storyboard Generator
+          </h1>
+          <button
+            onClick={onViewHistory}
+            className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-[13px] font-medium transition-colors"
+            style={{
+              color: "var(--text-secondary)",
+              background: "var(--bg-card)",
+              border: "1px solid var(--border-subtle)",
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.color = "var(--text-primary)")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.color = "var(--text-secondary)")
+            }
+          >
+            <HistoryIcon size={15} />
+            History
+          </button>
+        </div>
+
         {/* Wordmark */}
         <div className="mb-10 text-center">
           <p
@@ -117,14 +147,14 @@ export function CreateView({ onGenerate, initialError }: CreateViewProps) {
           >
             Canon
           </p>
-          <h1
+          <h2
             className="text-[2.6rem] font-semibold leading-[1.1] tracking-tight"
             style={{ color: "var(--text-primary)" }}
           >
             Paste your script.
             <br />
             Get your storyboard.
-          </h1>
+          </h2>
           <p
             className="mt-4 text-[15px] leading-relaxed"
             style={{ color: "var(--text-muted)" }}
