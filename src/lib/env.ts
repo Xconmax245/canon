@@ -28,7 +28,14 @@ export const env = {
     webhookSecret: () => optional("KIE_WEBHOOK_SECRET"),
   },
   app: {
-    baseUrl: () => optional("APP_BASE_URL", "http://localhost:3000")!,
+    baseUrl: () => {
+      return (
+        process.env.APP_BASE_URL ||
+        (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : undefined) ||
+        (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined) ||
+        "http://localhost:3000"
+      );
+    },
     cronSecret: () => optional("CRON_SECRET"),
   },
   supabase: {

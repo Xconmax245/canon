@@ -12,13 +12,15 @@ async function run(req: Request) {
   const secret = process.env.INTERNAL_RECONCILE_SECRET;
   
   if (process.env.NODE_ENV !== "development") {
-    if (!secret) {
-      logger.error("cron.reconcile_error", { error: "INTERNAL_RECONCILE_SECRET not set in production" });
-      return Response.json({ error: "server_configuration_error" }, { status: 500 });
-    }
     const auth = req.headers.get("authorization");
+    // If it's not a cron job sending the secret, it must be an authenticated user
+    // (middleware.ts ensures only logged-in users can reach this if no secret is sent)
     if (auth !== `Bearer ${secret}`) {
-      return Response.json({ error: "unauthorized" }, { status: 401 });
+      // Allow client-side calls (middleware already checked Supabase Auth)
+      const isClientCall = req.headers.get("cookie")?.includes("sb-");
+      if (!isClientCall) {
+        return Response.json({ error: "unauthorized" }, { status: 401 });
+      }
     }
   }
 

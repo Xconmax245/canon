@@ -72,17 +72,17 @@ export function ProgressView({ projectId, onComplete, onStop }: ProgressViewProp
     };
   }, [projectId, onComplete]);
 
-  // In dev, KIE webhooks can't reach localhost, so the reconciler never fires
-  // automatically. Trigger it ourselves every 60s so scenes don't stay stuck.
+  // Trigger reconciler periodically. In dev this is the primary mechanism (since webhooks
+  // can't reach localhost). In production, this acts as a robust fallback if KIE
+  // webhooks are dropped or misconfigured (e.g. wrong APP_BASE_URL).
   useEffect(() => {
-    if (process.env.NODE_ENV !== "development") return;
     const id = setInterval(() => {
       fetch("/api/internal/reconcile", { method: "POST" }).catch(() => {});
     }, 60_000);
-    // Also fire once immediately after 35s (just past the 30s stale threshold)
+    // Also fire once immediately after 20s to unstick any jobs quickly
     const initial = setTimeout(() => {
       fetch("/api/internal/reconcile", { method: "POST" }).catch(() => {});
-    }, 35_000);
+    }, 20_000);
     return () => {
       clearInterval(id);
       clearTimeout(initial);
