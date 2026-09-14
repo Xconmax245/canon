@@ -5,6 +5,7 @@ const BUCKET = "storyboard-images";
 function storageHeaders(contentType: string) {
   return {
     Authorization: `Bearer ${env.supabase.serviceRoleKey()}`,
+    apikey: env.supabase.serviceRoleKey(),
     // Supabase validates this header against the bucket's allowed_mime_types,
     // so it must be the actual image type, never a generic octet-stream.
     "Content-Type": contentType,
