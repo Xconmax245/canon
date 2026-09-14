@@ -330,7 +330,17 @@ export async function retryDownload(jobId: string): Promise<void> {
     data: { state: "downloading", attempts: { increment: 1 } },
   });
 
-  await runDownload(job.id, []);
+  // Use Next.js after() to run the heavy download in the background so the
+  // API route responds instantly and avoids Vercel's 10s timeout limit.
+  try {
+    const { after } = require("next/server");
+    after(async () => {
+      await runDownload(job.id, []);
+    });
+  } catch {
+    // Fallback if after() is not available (e.g. CLI scripts)
+    await runDownload(job.id, []);
+  }
 }
 
 /** Retry a failed generation — creates a NEW KIE task and costs credits again. */

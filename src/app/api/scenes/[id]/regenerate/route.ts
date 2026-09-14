@@ -1,6 +1,8 @@
 import { handleRouteError, jsonOk } from "@/lib/http";
 import { retryFailedGeneration } from "@/lib/generation/engine";
 
+export const maxDuration = 60;
+
 /**
  * POST /api/scenes/:id/regenerate — regenerate image for one scene.
  * Creates a NEW imageVersion + new Asset row; history is never overwritten.
