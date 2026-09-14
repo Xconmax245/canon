@@ -52,6 +52,45 @@ export function StoryboardView({ projectId, onStartOver, onResumeGeneration }: S
   const sceneCount = storyboard?.scenes.length ?? 0;
   
   const hasWaitingScenes = storyboard?.scenes.some((s) => s.status === "waiting");
+  const hasGeneratingScenes = storyboard?.scenes.some(
+    (s) => s.status === "queuing" || s.status === "generating" || s.status === "downloading"
+  );
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    let cancelled = false;
+
+    async function poll() {
+      if (cancelled) return;
+      await fetchBoard();
+      if (!cancelled) {
+        timer = setTimeout(poll, 3000);
+      }
+    }
+
+    if (hasGeneratingScenes) {
+      timer = setTimeout(poll, 3000);
+    }
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [hasGeneratingScenes, fetchBoard]);
+
+  useEffect(() => {
+    if (!hasGeneratingScenes) return;
+    const id = setInterval(() => {
+      fetch("/api/internal/reconcile", { method: "POST" }).catch(() => {});
+    }, 60_000);
+    const initial = setTimeout(() => {
+      fetch("/api/internal/reconcile", { method: "POST" }).catch(() => {});
+    }, 20_000);
+    return () => {
+      clearInterval(id);
+      clearTimeout(initial);
+    };
+  }, [hasGeneratingScenes]);
 
   async function handleStartGeneration() {
     if (startingGeneration) return;
