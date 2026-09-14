@@ -127,7 +127,11 @@ export default function Home() {
         />
       )}
       {stage === "storyboard" && projectId && (
-        <StoryboardView projectId={projectId} onStartOver={handleStartOver} />
+        <StoryboardView 
+          projectId={projectId} 
+          onStartOver={handleStartOver} 
+          onResumeGeneration={() => setStage("progress")} 
+        />
       )}
     </div>
   );

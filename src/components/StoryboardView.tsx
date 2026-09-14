@@ -8,16 +8,19 @@ import {
   type StoryboardScene,
 } from "@/lib/api-client";
 import { SceneCard } from "@/components/SceneCard";
+import { generateProject } from "@/lib/api-client";
 
 interface StoryboardViewProps {
   projectId: string;
   onStartOver: () => void;
+  onResumeGeneration?: () => void;
 }
 
-export function StoryboardView({ projectId, onStartOver }: StoryboardViewProps) {
+export function StoryboardView({ projectId, onStartOver, onResumeGeneration }: StoryboardViewProps) {
   const [storyboard, setStoryboard] = useState<Storyboard | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [startingGeneration, setStartingGeneration] = useState(false);
 
   const fetchBoard = useCallback(async () => {
     try {
@@ -47,6 +50,20 @@ export function StoryboardView({ projectId, onStartOver }: StoryboardViewProps) 
   const imagesUsed = storyboard?.imagesUsed;
   const generationLimit = storyboard?.generationLimit;
   const sceneCount = storyboard?.scenes.length ?? 0;
+  
+  const hasWaitingScenes = storyboard?.scenes.some((s) => s.status === "waiting");
+
+  async function handleStartGeneration() {
+    if (startingGeneration) return;
+    setStartingGeneration(true);
+    try {
+      await generateProject(projectId);
+      onResumeGeneration?.();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to start generation");
+      setStartingGeneration(false);
+    }
+  }
 
   return (
     <div className="min-h-dvh px-5 py-8">
@@ -85,9 +102,21 @@ export function StoryboardView({ projectId, onStartOver }: StoryboardViewProps) 
           )}
         </div>
 
+        {/* Generate missing images button */}
+        {!loading && storyboard && hasWaitingScenes && (
+          <button
+            onClick={handleStartGeneration}
+            disabled={startingGeneration}
+            className="flex items-center gap-1.5 rounded-full px-4 py-1.5 text-[12px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+            style={{ background: "var(--accent-primary)" }}
+          >
+            {startingGeneration ? "Starting..." : "Start Generation"}
+          </button>
+        )}
+
         {/* Budget indicator */}
         {imagesUsed !== undefined && generationLimit !== undefined && (
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 ml-2">
             <Images size={13} strokeWidth={1.75} style={{ color: "var(--text-muted)" }} />
             <span
               className="font-mono-num text-[12px]"
