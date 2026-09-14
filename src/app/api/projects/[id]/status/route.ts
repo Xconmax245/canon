@@ -42,7 +42,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
         succeeded,
         failed,
         activeJobs,
-        allDone: activeJobs === 0 && succeeded + failed === project._count.scenes,
+        allDone: project._count.scenes > 0 && activeJobs === 0 && succeeded + failed === project._count.scenes,
       },
       budget: {
         generationLimit: project.generationLimit,

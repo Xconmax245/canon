@@ -75,7 +75,7 @@ export default function Home() {
 
   const handleSelectHistoryProject = useCallback((id: string, status: string) => {
     setProjectId(id);
-    if (status === "generating" || status === "analyzing" || status === "planning" || status === "draft") {
+    if (status === "generating" || status === "analyzing" || status === "analyzed" || status === "planning" || status === "planned" || status === "draft") {
       setStage("progress");
     } else {
       setStage("storyboard");
