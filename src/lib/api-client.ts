@@ -95,10 +95,13 @@ async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
     let message = `HTTP ${res.status}`;
     try {
       const body = await res.json();
-      if (body?.error) message = body.error;
-      else if (body?.message) message = body.message;
+      if (body?.error) {
+        message = typeof body.error === "string" ? body.error : (body.error.message || JSON.stringify(body.error));
+      } else if (body?.message) {
+        message = typeof body.message === "string" ? body.message : JSON.stringify(body.message);
+      }
     } catch {}
-    throw new Error(message);
+    throw new Error(typeof message === "string" ? message : JSON.stringify(message));
   }
   return res.json() as Promise<T>;
 }
