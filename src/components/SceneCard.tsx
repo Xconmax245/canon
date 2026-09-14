@@ -9,6 +9,7 @@ import {
   AlertTriangle,
   Loader2,
   ImageOff,
+  Download,
 } from "lucide-react";
 import {
   patchScenePrompt,
@@ -93,6 +94,26 @@ export function SceneCard({ scene, onUpdate }: SceneCardProps) {
       setCardError(err instanceof Error ? err.message : "Regenerate failed");
     } finally {
       setRegenerating(false);
+    }
+  }
+
+  async function handleDownload() {
+    if (!scene.imageUrl) return;
+    try {
+      // Try to fetch as blob to force download
+      const res = await fetch(scene.imageUrl);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `scene-${String(scene.order).padStart(2, "0")}.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Download failed", err);
+      window.open(scene.imageUrl, "_blank"); // Fallback
     }
   }
 
@@ -217,6 +238,23 @@ export function SceneCard({ scene, onUpdate }: SceneCardProps) {
                 <RefreshCw size={12} strokeWidth={2} />
               )}
               Regenerate
+            </button>
+          )}
+
+          {showImage && (
+            <button
+              id={`download-${scene.id}`}
+              onClick={handleDownload}
+              className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[12px] font-medium transition-all hover:border-[var(--accent-primary)] hover:text-[var(--accent-primary)]"
+              style={{
+                borderColor: "var(--surface-border)",
+                color: "var(--text-muted)",
+                background: "transparent",
+              }}
+              title="Download image"
+            >
+              <Download size={12} strokeWidth={2} />
+              Download
             </button>
           )}
 
