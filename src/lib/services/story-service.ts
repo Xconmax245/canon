@@ -213,40 +213,40 @@ export async function generatePromptsForProject(projectId: string) {
       .filter((x): x is NonNullable<typeof x> => x !== null),
   };
 
-  const results: { sceneId: string; promptLength: number; skipped: boolean }[] = [];
+  const results = await Promise.all(
+    dbScenes.map(async (scene) => {
+      // Any existing prompt (auto or user-edited) is kept. First generation uses
+      // the auto-built prompt; explicit rebuilds go through regenerate-prompt.
+      // This also keeps repeat /generate calls from silently changing prompts.
+      if (scene.prompt.trim() !== "") {
+        return { sceneId: scene.id, promptLength: scene.prompt.length, skipped: true };
+      }
 
-  for (const scene of dbScenes) {
-    // Any existing prompt (auto or user-edited) is kept. First generation uses
-    // the auto-built prompt; explicit rebuilds go through regenerate-prompt.
-    // This also keeps repeat /generate calls from silently changing prompts.
-    if (scene.prompt.trim() !== "") {
-      results.push({ sceneId: scene.id, promptLength: scene.prompt.length, skipped: true });
-      continue;
-    }
+      const built = await buildScenePrompt({
+        scene: {
+          order: scene.order,
+          scriptExcerpt: scene.scriptExcerpt,
+          characterIds: scene.characterIds,
+          locationId: undefined,
+          action: scene.action,
+          emotion: scene.emotion ?? undefined,
+          composition: scene.composition,
+          continuityNotes: scene.continuityNotes,
+          identityLockRequirement: scene.identityLockRequirement as IdentityLockRequirement,
+        },
+        bible: bibleByDbIds,
+        styleDirective: project.visualStyleDirective,
+        aspectRatio: project.aspectRatio,
+      });
 
-    const built = await buildScenePrompt({
-      scene: {
-        order: scene.order,
-        scriptExcerpt: scene.scriptExcerpt,
-        characterIds: scene.characterIds,
-        locationId: undefined,
-        action: scene.action,
-        emotion: scene.emotion ?? undefined,
-        composition: scene.composition,
-        continuityNotes: scene.continuityNotes,
-        identityLockRequirement: scene.identityLockRequirement as IdentityLockRequirement,
-      },
-      bible: bibleByDbIds,
-      styleDirective: project.visualStyleDirective,
-      aspectRatio: project.aspectRatio,
-    });
-
-    await prisma.scene.update({
-      where: { id: scene.id },
-      data: { prompt: built.prompt, promptSource: "auto" },
-    });
-    results.push({ sceneId: scene.id, promptLength: built.prompt.length, skipped: false });
-  }
+      await prisma.scene.update({
+        where: { id: scene.id },
+        data: { prompt: built.prompt, promptSource: "auto" },
+      });
+      
+      return { sceneId: scene.id, promptLength: built.prompt.length, skipped: false };
+    })
+  );
 
   await prisma.project.update({ where: { id: projectId }, data: { status: "planned" } });
   return results;

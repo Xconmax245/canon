@@ -3,6 +3,8 @@ import { ApiError, handleRouteError, jsonOk, readJsonBody } from "@/lib/http";
 import { generatePromptsForProject } from "@/lib/services/story-service";
 import { startGenerationForScene } from "@/lib/generation/engine";
 
+export const maxDuration = 60; // Extend Vercel timeout to maximum allowed for Hobby/Pro limits
+
 /**
  * POST /api/projects/:id/generate — start image generation for all planned scenes.
  *
@@ -35,29 +37,29 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
       throw new ApiError(409, "not_planned", "Run scene planning before generating");
     }
 
-    const results: { sceneId: string; jobId?: string; state?: string; error?: string }[] = [];
-    for (const scene of scenes) {
-      if (body.onlyPending !== false && scene.status === "success") {
-        results.push({ sceneId: scene.id, state: "success" });
-        continue;
-      }
-      
-      // Check if project was cancelled via the Stop button before dispatching
-      const currentProject = await prisma.project.findUnique({ where: { id } });
-      if (currentProject?.status === "cancelled") {
-        break; // Stop dispatching further scenes
-      }
-
-      try {
-        const r = await startGenerationForScene(scene.id);
-        results.push({ sceneId: scene.id, jobId: r.jobId, state: r.state });
-      } catch (err) {
-        results.push({
-          sceneId: scene.id,
-          error: err instanceof Error ? err.message : "generation start failed",
-        });
-      }
+    // Check if project was cancelled via the Stop button before dispatching
+    const currentProject = await prisma.project.findUnique({ where: { id } });
+    if (currentProject?.status === "cancelled") {
+      return jsonOk({ started: 0, results: [] });
     }
+
+    const results = await Promise.all(
+      scenes.map(async (scene) => {
+        if (body.onlyPending !== false && scene.status === "success") {
+          return { sceneId: scene.id, state: "success" };
+        }
+
+        try {
+          const r = await startGenerationForScene(scene.id);
+          return { sceneId: scene.id, jobId: r.jobId, state: r.state };
+        } catch (err) {
+          return {
+            sceneId: scene.id,
+            error: err instanceof Error ? err.message : "generation start failed",
+          };
+        }
+      })
+    );
 
     await prisma.project.update({ where: { id }, data: { status: "generating" } });
 
