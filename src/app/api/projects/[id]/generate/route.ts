@@ -47,23 +47,29 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     // even if webhooks or reconciler fires before we return.
     await prisma.project.update({ where: { id }, data: { status: "generating" } });
 
-    const results = await Promise.all(
-      scenes.map(async (scene) => {
-        if (body.onlyPending !== false && scene.status === "success") {
-          return { sceneId: scene.id, state: "success" };
-        }
+    // Dispatch scenes SEQUENTIALLY with a small delay between each KIE call.
+    // Promise.all was hammering KIE with all requests simultaneously, causing
+    // rate-limit (429) errors that immediately failed most scenes.
+    const results: Array<{ sceneId: string; jobId?: string; state?: string; error?: string }> = [];
+    for (const scene of scenes) {
+      if (body.onlyPending !== false && scene.status === "success") {
+        results.push({ sceneId: scene.id, state: "success" });
+        continue;
+      }
 
-        try {
-          const r = await startGenerationForScene(scene.id);
-          return { sceneId: scene.id, jobId: r.jobId, state: r.state };
-        } catch (err) {
-          return {
-            sceneId: scene.id,
-            error: err instanceof Error ? err.message : "generation start failed",
-          };
-        }
-      })
-    );
+      try {
+        const r = await startGenerationForScene(scene.id);
+        results.push({ sceneId: scene.id, jobId: r.jobId, state: r.state });
+      } catch (err) {
+        results.push({
+          sceneId: scene.id,
+          error: err instanceof Error ? err.message : "generation start failed",
+        });
+      }
+
+      // Small pause between KIE dispatches to stay within rate limits.
+      await new Promise((res) => setTimeout(res, 300));
+    }
 
     return jsonOk({
       started: results.filter((r) => !r.error).length,
