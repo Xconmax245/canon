@@ -1,6 +1,8 @@
 import { planProjectScenes } from "@/lib/services/story-service";
 import { handleRouteError, jsonOk } from "@/lib/http";
 
+export const maxDuration = 60; // OpenAI LLM calls can take 20-40s
+
 /**
  * POST /api/projects/:id/plan-scenes — run scene planning.
  * Stage 2 of 3. Scenes are tagged with identityLockRequirement here, BEFORE
