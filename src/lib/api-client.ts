@@ -12,7 +12,7 @@ export type SceneStatus =
   | "fail"
   | "download_failed";
 
-export type PromptSource = "auto" | "user-edited";
+export type PromptSource = "auto" | "user_edited";
 
 // --- Request / Response shapes ---
 
@@ -144,7 +144,19 @@ export async function getProjects(): Promise<{ projects: ProjectHistoryItem[] }>
 }
 
 export async function getStoryboard(id: string): Promise<Storyboard> {
-  return apiFetch<Storyboard>(`/api/projects/${id}/storyboard`);
+  const raw = await apiFetch<{
+    project: { generationLimit: number };
+    scenes: (StoryboardScene & { assets?: unknown[] })[];
+    characters?: unknown[];
+    locations?: unknown[];
+  }>(`/api/projects/${id}/storyboard`);
+  // Count successfully generated images from scenes
+  const imagesUsed = raw.scenes.filter((s) => s.status === "success").length;
+  return {
+    scenes: raw.scenes,
+    generationLimit: raw.project?.generationLimit,
+    imagesUsed,
+  };
 }
 
 export async function patchScenePrompt(

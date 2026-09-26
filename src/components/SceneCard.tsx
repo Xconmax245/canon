@@ -59,7 +59,7 @@ export function SceneCard({ scene, onUpdate }: SceneCardProps) {
     setCardError(null);
     try {
       await patchScenePrompt(scene.id, promptDraft);
-      onUpdate({ ...scene, prompt: promptDraft, promptSource: "user-edited" });
+      onUpdate({ ...scene, prompt: promptDraft, promptSource: "user_edited" });
       setPromptOpen(false);
     } catch (err: unknown) {
       setCardError(err instanceof Error ? err.message : "Save failed");
@@ -282,7 +282,7 @@ export function SceneCard({ scene, onUpdate }: SceneCardProps) {
         {/* Collapsible prompt editor */}
         {promptOpen && (
           <div className="mt-3 animate-fade-in">
-            {scene.promptSource === "user-edited" && (
+            {scene.promptSource === "user_edited" && (
               <span
                 className="mb-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold"
                 style={{

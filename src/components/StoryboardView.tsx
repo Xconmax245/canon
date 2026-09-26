@@ -56,18 +56,35 @@ export function StoryboardView({ projectId, onStartOver, onResumeGeneration }: S
     (s) => s.status === "queuing" || s.status === "generating" || s.status === "downloading"
   );
 
+  // Single polling loop — always active while the storyboard is mounted.
+  // We check terminal state from the fresh response, not from stale React state,
+  // to avoid the race where hasGeneratingScenes is stale when the effect re-runs.
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
     let cancelled = false;
 
     async function poll() {
       if (cancelled) return;
-      await fetchBoard();
-      if (!cancelled) {
-        timer = setTimeout(poll, 3000);
+      try {
+        const data = await getStoryboard(projectId);
+        if (cancelled) return;
+        setStoryboard(data);
+
+        // Check if any scene is still in progress using fresh data
+        const stillActive = data.scenes.some(
+          (s) => s.status === "queuing" || s.status === "generating" || s.status === "downloading"
+        );
+        if (stillActive) {
+          timer = setTimeout(poll, 3000);
+        }
+      } catch {
+        if (!cancelled) {
+          timer = setTimeout(poll, 5000);
+        }
       }
     }
 
+    // Start polling if there are active scenes (hasGeneratingScenes derived from current state)
     if (hasGeneratingScenes) {
       timer = setTimeout(poll, 3000);
     }
@@ -76,7 +93,8 @@ export function StoryboardView({ projectId, onStartOver, onResumeGeneration }: S
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [hasGeneratingScenes, fetchBoard]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId, hasGeneratingScenes]);
 
   useEffect(() => {
     if (!hasGeneratingScenes) return;

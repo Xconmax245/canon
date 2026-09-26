@@ -43,6 +43,10 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
       return jsonOk({ started: 0, results: [] });
     }
 
+    // Mark project as generating BEFORE dispatching so status is consistent
+    // even if webhooks or reconciler fires before we return.
+    await prisma.project.update({ where: { id }, data: { status: "generating" } });
+
     const results = await Promise.all(
       scenes.map(async (scene) => {
         if (body.onlyPending !== false && scene.status === "success") {
@@ -60,8 +64,6 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
         }
       })
     );
-
-    await prisma.project.update({ where: { id }, data: { status: "generating" } });
 
     return jsonOk({
       started: results.filter((r) => !r.error).length,

@@ -247,6 +247,22 @@ export function ProgressView({ projectId, onComplete, onStop }: ProgressViewProp
         {error && (
           <p className="mt-4 text-center text-[13px] text-red-500">{error}</p>
         )}
+
+        {/* Stop / cancel button */}
+        <div className="mt-6 flex justify-center">
+          <button
+            id="stop-generation-btn"
+            onClick={handleStop}
+            className="flex items-center gap-2 rounded-full border px-5 py-2 text-[12px] font-medium transition-all hover:border-red-400 hover:text-red-500"
+            style={{
+              borderColor: "var(--surface-border)",
+              color: "var(--text-muted)",
+              background: "var(--surface)",
+            }}
+          >
+            Stop generation
+          </button>
+        </div>
       </div>
     </div>
   );

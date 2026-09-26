@@ -60,7 +60,7 @@ export function HistoryView({ onBack, onSelectProject }: HistoryViewProps) {
         </div>
       ) : projects.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center text-center gap-3">
-          <div className="h-12 w-12 rounded-full flex items-center justify-center" style={{ background: "var(--bg-card)", border: "1px solid var(--border-subtle)" }}>
+          <div className="h-12 w-12 rounded-full flex items-center justify-center" style={{ background: "var(--surface)", border: "1px solid var(--surface-border)" }}>
             <LayoutGrid size={20} style={{ color: "var(--text-muted)" }} />
           </div>
           <p className="text-[15px] font-medium" style={{ color: "var(--text-primary)" }}>No projects yet</p>
@@ -71,8 +71,9 @@ export function HistoryView({ onBack, onSelectProject }: HistoryViewProps) {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {projects.map((p, i) => {
-            const isDone = p.status === "completed" || p.status === "failed";
+            const isDone = p.status === "generating" && p._count.scenes > 0;
             const isCancelled = p.status === "cancelled";
+            const isFailed = p.status === "failed";
             const date = new Date(p.createdAt).toLocaleDateString(undefined, { 
               month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric' 
             });
@@ -83,8 +84,8 @@ export function HistoryView({ onBack, onSelectProject }: HistoryViewProps) {
                 onClick={() => onSelectProject(p.id, p.status)}
                 className="group relative flex flex-col items-start gap-3 p-5 rounded-xl text-left transition-all"
                 style={{
-                  background: "var(--bg-card)",
-                  border: "1px solid var(--border-subtle)",
+                  background: "var(--surface)",
+                  border: "1px solid var(--surface-border)",
                 }}
                 data-aos="fade-up"
                 data-aos-delay={Math.min(i * 50, 400)}
@@ -94,8 +95,8 @@ export function HistoryView({ onBack, onSelectProject }: HistoryViewProps) {
                     {date}
                   </span>
                   <span className="text-[11px] font-bold px-2 py-0.5 rounded-full capitalize" style={{ 
-                    background: isDone ? "rgba(34, 197, 94, 0.1)" : isCancelled ? "rgba(239, 68, 68, 0.1)" : "rgba(59, 130, 246, 0.1)",
-                    color: isDone ? "#22c55e" : isCancelled ? "#ef4444" : "#3b82f6" 
+                    background: isDone ? "rgba(34, 197, 94, 0.1)" : isFailed ? "rgba(239, 68, 68, 0.1)" : isCancelled ? "rgba(239, 68, 68, 0.1)" : "rgba(59, 130, 246, 0.1)",
+                    color: isDone ? "#22c55e" : isFailed ? "#ef4444" : isCancelled ? "#ef4444" : "#3b82f6" 
                   }}>
                     {p.status}
                   </span>
@@ -105,7 +106,7 @@ export function HistoryView({ onBack, onSelectProject }: HistoryViewProps) {
                   <h3 className="text-[16px] font-semibold truncate capitalize" style={{ color: "var(--text-primary)" }}>
                     {p.visualStyleDirective || "Cinematic"} Style
                   </h3>
-                  <p className="text-[13px] mt-1" style={{ color: "var(--text-secondary)" }}>
+                  <p className="text-[13px] mt-1" style={{ color: "var(--text-muted)" }}>
                     {p._count.scenes} scenes • {p.aspectRatio}
                   </p>
                 </div>
